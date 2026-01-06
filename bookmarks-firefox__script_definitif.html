@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>--- Mur de Bookmarks ---</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+      background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+      min-height:100vh;
+      color:#111827;
+    }
+    header {
+      position:sticky;top:0;z-index:10;
+      background:rgba(255,255,255,0.95);
+      backdrop-filter:blur(10px);
+      padding:1rem 1.5rem;
+      box-shadow:0 2px 20px rgba(0,0,0,0.15);
+    }
+    .header-content {
+      max-width:1200px;margin:0 auto;
+      display:flex;flex-wrap:wrap;gap:1rem;align-items:center;
+    }
+    h1 {
+      margin:0;font-size:1.4rem;font-weight:800;
+      background:linear-gradient(135deg,#667eea,#764ba2);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+    }
+    .controls {
+      display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;
+    }
+    .search-input{
+      padding:0.5rem 0.8rem;
+      border:2px solid #e0e6ed;border-radius:8px;font-size:0.9rem;min-width:200px;
+    }
+    .search-input:focus{outline:none;border-color:#667eea;}
+    button{
+      padding:0.5rem 1rem;border:none;border-radius:8px;
+      font-weight:600;font-size:0.9rem;cursor:pointer;
+      background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;
+      transition:transform 0.15s, box-shadow 0.15s;
+    }
+    button:hover{
+      transform:translateY(-1px);
+      box-shadow:0 4px 12px rgba(0,0,0,0.18);
+    }
+
+    main{max-width:1200px;margin:1.5rem auto;padding:0 1rem;}
+
+    .input-section{
+      background:rgba(255,255,255,0.98);border-radius:16px;
+      padding:1rem 1rem 1.2rem;
+      box-shadow:0 10px 30px rgba(0,0,0,0.15);
+      margin-bottom:1.5rem;
+    }
+    .input-section h2{
+      margin:0 0 0.3rem;font-size:1rem;font-weight:700;
+    }
+    .steps{
+      font-size:0.9rem;color:#4b5563;margin-bottom:0.5rem;
+    }
+    .steps ul{margin:0.3rem 0 0.6rem 1.2rem;padding:0;font-size:0.9rem;}
+    textarea{
+      width:100%;min-height:180px;margin-top:0.4rem;
+      padding:0.6rem;border-radius:10px;border:2px solid #e0e6ed;
+      font-family:monospace;font-size:0.85rem;
+      resize:vertical;
+    }
+    textarea:focus{outline:none;border-color:#667eea;}
+    .debug-info{
+      margin-top:0.6rem;font-size:0.8rem;font-family:monospace;
+      background:#e3f2fd;border-radius:8px;padding:0.5rem;
+      max-height:200px;overflow:auto;color:#1e3a8a;
+      border:1px solid #bfdbfe;
+    }
+    .loading{
+      display:none;text-align:center;padding:1.2rem;
+      background:rgba(255,255,255,0.95);border-radius:12px;margin-top:0.6rem;
+      font-size:0.9rem;
+    }
+    .loading.show{display:block;}
+    .spinner{
+      width:30px;height:30px;border-radius:50%;
+      border:3px solid #e5e7eb;border-top-color:#667eea;
+      margin:0 auto 0.5rem;animation:spin 1s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    .sort-controls{
+      display:flex;flex-wrap:wrap;gap:0.5rem;
+      margin-bottom:1rem;padding:0.7rem;
+      background:rgba(255,255,255,0.9);border-radius:12px;
+      font-size:0.85rem;align-items:center;
+    }
+    .sort-btn{
+      padding:0.3rem 0.8rem;border-radius:999px;
+      border:2px solid #e0e6ed;background:#fff;font-weight:600;font-size:0.8rem;
+      cursor:pointer;color:#111827;
+    }
+    .sort-btn.active{
+      background:linear-gradient(135deg,#667eea,#764ba2);
+      color:#fff;border-color:#667eea;
+    }
+
+    .folder{
+      background:rgba(255,255,255,0.97);border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.15);
+      margin-bottom:1.5rem;overflow:hidden;
+      border:1px solid #e5e7eb;
+    }
+    .folder-header{
+      display:flex;align-items:center;gap:0.5rem;
+      padding:0.8rem 1rem;border-bottom:1px solid #e5e7eb;
+      cursor:pointer;background:rgba(102,126,234,0.06);
+    }
+    .folder-title{
+      flex:1;font-weight:700;font-size:0.95rem;word-break:break-word;
+      color:#111827;
+    }
+    .folder-count{
+      font-size:0.8rem;background:rgba(102,126,234,0.15);
+      padding:0.15rem 0.6rem;border-radius:999px;
+      color:#1f2937;
+    }
+    .toggle-btn{
+      width:28px;height:28px;border-radius:50%;
+      border:none;background:#fff;color:#4f46e5;font-weight:bold;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .cards{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+      gap:1rem;padding:1rem;
+    }
+    .card{
+      background:#fff;border-radius:10px;
+      box-shadow:0 4px 16px rgba(0,0,0,0.08);
+      padding:0.8rem;font-size:0.85rem;position:relative;
+      border:1px solid #e5e7eb;
+    }
+    .card::before{
+      content:'';position:absolute;left:0;top:0;right:0;height:3px;
+      background:linear-gradient(90deg,#667eea,#764ba2);
+    }
+    .card-header{display:flex;gap:0.5rem;margin-bottom:0.4rem;}
+    .favicon{
+      width:24px;height:24px;border-radius:4px;
+      background:#f3f4f6;flex-shrink:0;
+    }
+    .card-title{font-weight:600;margin-bottom:0.2rem;}
+    .card-title a{text-decoration:none;color:#111827;}
+    .card-title a:hover{color:#4f46e5;}
+    .card-url{word-break:break-all;color:#6b7280;margin-bottom:0.3rem;}
+    .card-meta{display:flex;justify-content:space-between;color:#9ca3af;font-size:0.78rem;}
+    .hidden{display:none!important;}
+
+    @media(max-width:768px){
+      .header-content{flex-direction:column;align-items:flex-start;}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-content">
+    <h1>🎯 --- Mur de Bookmarks --- </h1>
+  </div>
+  <div class="header-content">
+    <input id="search" class="search-input" placeholder="🔍 Recherche (titre ou URL)…">
+    <button id="generate">✨ Générer le mur</button>
+    <button id="collapseAll">📂 Tout réduire</button>
+    <button id="expandAll">📂 Tout ouvrir</button>
+  </div>
+</header>
+
+<main>
+  <section class="input-section">
+    <h2>Importer ton fichier bookmarks.html</h2>
+    <div class="steps">
+      <ul>
+        <li>Dans Firefox : Marque‑pages → Gérer les marque‑pages → Importation et sauvegarde → Exporter des marque‑pages au format HTML… (fichier <code>bookmarks.html</code>).</li>
+        <li>Ouvre ce fichier dans un éditeur de texte, fais Ctrl+A puis Ctrl+C.</li>
+        <li>Colle tout dans la zone ci‑dessous et clique sur <strong>Générer le mur</strong>.</li>
+      </ul>
+    </div>
+    <textarea id="rawHtml" placeholder="Colle ici TOUT le contenu de bookmarks.html (idéalement : commence par &lt;!DOCTYPE NETSCAPE-Bookmark-file-1&gt;)"></textarea>
+    <div class="debug-info" id="debug">Prêt. Colle ton fichier puis clique sur “Générer le mur”.</div>
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div>Analyse en cours… <span id="linkCount">0</span> liens estimés</div>
+    </div>
+  </section>
+
+  <section id="output"></section>
+</main>
+
+<script>
+  let allFolders = [];
+  let currentSort = 'date-desc';
+
+  function logDebug(msg) {
+    const dbg = document.getElementById('debug');
+    dbg.innerHTML += '<br>' + msg;
+    dbg.scrollTop = dbg.scrollHeight;
+  }
+
+  function formatAddDate(ts) {
+    if (!ts) return 'Non daté';
+    const n = parseInt(ts, 10);
+    if (Number.isNaN(n) || n <= 0) return 'Non daté';
+    const d = new Date(n * 1000);
+    return String(d.getDate()).padStart(2,'0') + '/' +
+           String(d.getMonth()+1).padStart(2,'0') + '/' +
+           d.getFullYear();
+  }
+
+  function getFaviconUrl(url) {
+    try {
+      const host = new URL(url).hostname;
+      return 'https://www.google.com/s2/favicons?domain=' + host + '&sz=32';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  /**
+   * Parcours récursif d’un bloc <DL> avec un chemin courant.
+   * Chaque H3 crée un nouveau dossier avec son VRAI nom.
+   * Chaque lien A est attaché au dossier correspondant au chemin courant.
+   */
+  function walkDl(dl, path, folders) {
+    const children = Array.from(dl.children);
+    let currentFolderPath = path; // chemin courant (string)
+
+    for (let i = 0; i < children.length; i++) {
+      const node = children[i];
+      if (!node.tagName) continue;
+
+      if (node.tagName.toUpperCase() === 'DT') {
+        const h3 = node.querySelector('h3, H3');
+
+        // Dossier : <DT><H3>Nom</H3></DT><DL>...</DL>
+        if (h3) {
+          const rawName = h3.textContent || '';
+          const name = rawName.trim() || '(dossier sans nom)';
+          const folderPath = path ? path + ' / ' + name : name;
+
+          // Chercher si ce dossier existe déjà dans folders
+          let folder = folders.find(f => f.path === folderPath);
+          if (!folder) {
+            folder = { name, path: folderPath, bookmarks: [] };
+            folders.push(folder);
+            logDebug('📁 Dossier trouvé: ' + folderPath);
+          }
+
+          currentFolderPath = folderPath; // nouveau chemin courant
+
+          // DL suivant = contenu du dossier
+          const sib = node.nextElementSibling;
+          if (sib && sib.tagName && sib.tagName.toUpperCase() === 'DL') {
+            walkDl(sib, folderPath, folders);
+          }
+          continue;
+        }
+
+        // Lien : <DT><A HREF="...">Titre</A></DT>
+        const a = node.querySelector('a[href], A[HREF]');
+        if (a) {
+          const href = a.getAttribute('href') || a.getAttribute('HREF') || '';
+          if (!href || !href.startsWith('http') ||
+              href.toLowerCase().startsWith('javascript:') ||
+              href.toLowerCase().startsWith('place:')) {
+            continue;
+          }
+
+          const rawTitle = a.textContent || a.innerText || href;
+          const title = rawTitle.trim() || href;
+          const addDateRaw = a.getAttribute('add_date') || a.getAttribute('ADD_DATE') || '0';
+          const bm = {
+            title,
+            url: href,
+            addDateRaw,
+            addDate: formatAddDate(addDateRaw)
+          };
+
+          // Si aucun dossier courant, on met dans un dossier Racine unique
+          const targetPath = currentFolderPath || 'Racine';
+          let targetFolder = folders.find(f => f.path === targetPath);
+          if (!targetFolder) {
+            targetFolder = {
+              name: targetPath === 'Racine' ? 'Racine' : targetPath.split(' / ').slice(-1)[0],
+              path: targetPath,
+              bookmarks: []
+            };
+            folders.push(targetFolder);
+            logDebug('📁 Création dossier: ' + targetPath);
+          }
+          targetFolder.bookmarks.push(bm);
+        }
+      }
+    }
+  }
+
+  function parseFirefoxHierarchy(htmlString) {
+    const debug = document.getElementById('debug');
+    debug.innerHTML = '🧠 Début du parsing…';
+
+    if (!htmlString.includes('<DL') && !htmlString.includes('<dl')) {
+      logDebug('⚠️ Aucune balise <DL> trouvée dans le texte brut. Es‑tu sûr d’avoir collé le bon fichier HTML ?');
+    }
+    if (!htmlString.toUpperCase().includes('NETSCAPE-BOOKMARK-FILE-1')) {
+      logDebug('⚠️ Le DOCTYPE NETSCAPE ne semble pas présent. Ce n’est peut‑être pas un export classique de Firefox, mais on tente quand même.');
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, 'text/html');
+
+    const allDls = Array.from(doc.querySelectorAll('DL, dl'));
+    logDebug('🔎 Nombre de <DL> trouvés dans le DOM: ' + allDls.length);
+
+    if (!allDls.length) {
+      logDebug('❌ Aucun <DL> dans le DOM parsé. Le navigateur n’a pas reconnu la structure attendue.');
+      return [];
+    }
+
+    const folders = [];
+    // On parcourt chaque DL comme racine potentielle
+    allDls.forEach((dl, index) => {
+      logDebug('➡️ Parcours du bloc DL #' + (index + 1));
+      walkDl(dl, '', folders);
+    });
+
+    const filtered = folders.filter(f => f.bookmarks && f.bookmarks.length > 0);
+    const total = filtered.reduce((s, f) => s + f.bookmarks.length, 0);
+    logDebug('✅ Dossiers avec au moins un lien: ' + filtered.length);
+    logDebug('✅ Nombre total de liens: ' + total);
+
+    return filtered;
+  }
+
+  function sortBookmarks(list, sortType) {
+    return [...list].sort((a, b) => {
+      const ad = parseInt(a.addDateRaw) || 0;
+      const bd = parseInt(b.addDateRaw) || 0;
+      switch (sortType) {
+        case 'date-desc': return bd - ad;
+        case 'date-asc':  return ad - bd;
+        case 'alpha-asc': return a.title.localeCompare(b.title);
+        case 'alpha-desc':return b.title.localeCompare(a.title);
+        default: return 0;
+      }
+    });
+  }
+
+  function createWall(folders) {
+    const out = document.getElementById('output');
+    const loading = document.getElementById('loading');
+    loading.classList.remove('show');
+
+    if (!folders.length) {
+      out.innerHTML =
+        '<div style="background:rgba(255,255,255,0.97);border-radius:16px;padding:1.5rem;text-align:center;border:1px solid #e5e7eb;">' +
+        '<h2>📭 Aucun lien trouvé</h2>' +
+        '<p style="color:#4b5563;font-size:0.9rem;">Vérifie que tu as bien exporté un fichier HTML Firefox (avec des balises &lt;DL&gt;/&lt;DT&gt;/&lt;H3&gt;/&lt;A&gt;) et que tu as collé son contenu complet.</p>' +
+        '</div>';
+      return;
+    }
+
+    allFolders = folders.map(f => ({
+      ...f,
+      bookmarks: sortBookmarks(f.bookmarks, currentSort)
+    }));
+
+    const totalLinks = allFolders.reduce((s,f)=>s+f.bookmarks.length,0);
+    out.innerHTML =
+      `<div class="sort-controls">
+         <strong>🎯 ${totalLinks} liens dans ${allFolders.length} dossiers (noms hiérarchiques réels) – tri :</strong>
+         <button class="sort-btn ${currentSort==='date-desc'?'active':''}" data-sort="date-desc">📅 Récents</button>
+         <button class="sort-btn ${currentSort==='date-asc'?'active':''}" data-sort="date-asc">📅 Anciens</button>
+         <button class="sort-btn ${currentSort==='alpha-asc'?'active':''}" data-sort="alpha-asc">🔤 A‑Z</button>
+         <button class="sort-btn ${currentSort==='alpha-desc'?'active':''}" data-sort="alpha-desc">🔤 Z‑A</button>
+       </div>`;
+
+    allFolders.forEach(folder => {
+      const section = document.createElement('section');
+      section.className = 'folder';
+
+      const header = document.createElement('div');
+      header.className = 'folder-header';
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '−';
+
+      const title = document.createElement('div');
+      title.className = 'folder-title';
+      title.textContent = folder.path || folder.name;
+
+      const count = document.createElement('span');
+      count.className = 'folder-count';
+      count.textContent = folder.bookmarks.length + ' liens';
+
+      header.append(btn, title, count);
+
+      const cards = document.createElement('div');
+      cards.className = 'cards';
+
+      folder.bookmarks.forEach(b => {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.dataset.title = b.title.toLowerCase();
+        card.dataset.url = b.url.toLowerCase();
+
+        const ch = document.createElement('div');
+        ch.className = 'card-header';
+
+        const img = document.createElement('img');
+        img.className = 'favicon';
+        img.src = getFaviconUrl(b.url);
+        img.alt = '';
+        img.loading = 'lazy';
+        img.onerror = () => { img.style.display='none'; };
+
+        const content = document.createElement('div');
+
+        const t = document.createElement('div');
+        t.className = 'card-title';
+        const a = document.createElement('a');
+        a.href = b.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = b.title;
+        t.appendChild(a);
+
+        const u = document.createElement('div');
+        u.className = 'card-url';
+        u.textContent = b.url;
+
+        const meta = document.createElement('div');
+        meta.className = 'card-meta';
+        let host = '-';
+        try { host = new URL(b.url).hostname; } catch(e){}
+        meta.innerHTML = '<span>'+b.addDate+'</span><span>'+host+'</span>';
+
+        content.appendChild(t);
+        content.appendChild(u);
+        content.appendChild(meta);
+
+        ch.appendChild(img);
+        ch.appendChild(content);
+        card.appendChild(ch);
+        cards.appendChild(card);
+      });
+
+      btn.onclick = () => {
+        const hidden = cards.classList.toggle('hidden');
+        btn.textContent = hidden ? '+' : '−';
+      };
+
+      section.appendChild(header);
+      section.appendChild(cards);
+      out.appendChild(section);
+    });
+
+    document.querySelectorAll('.sort-btn').forEach(b => {
+      b.onclick = () => {
+        currentSort = b.dataset.sort;
+        document.querySelectorAll('.sort-btn').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        createWall(allFolders);
+        applyFilter(document.getElementById('search').value);
+      };
+    });
+  }
+
+  // Recherche fonctionnelle (titre + URL, sur tous les dossiers)
+  function applyFilter(term) {
+    const lower = term.toLowerCase().trim();
+    document.querySelectorAll('.folder').forEach(folder => {
+      const cards = folder.querySelectorAll('.card');
+      let visible = 0;
+      cards.forEach(card => {
+        const match = !lower ||
+          card.dataset.title.includes(lower) ||
+          card.dataset.url.includes(lower);
+        card.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+      folder.style.display = visible ? '' : 'none';
+      const count = folder.querySelector('.folder-count');
+      if (count) count.textContent = (visible || cards.length) + ' liens';
+    });
+  }
+
+  document.getElementById('generate').onclick = () => {
+    const raw = document.getElementById('rawHtml').value;
+    const debug = document.getElementById('debug');
+    if (!raw.trim()) {
+      alert('Colle d’abord le contenu COMPLET de bookmarks.html.');
+      return;
+    }
+
+    debug.innerHTML = '🚀 Lancement du parsing…';
+    const loading = document.getElementById('loading');
+    const linkCount = document.getElementById('linkCount');
+    let fake = 0;
+    loading.classList.add('show');
+    const it = setInterval(()=>{ fake += 15; linkCount.textContent = fake; },80);
+
+    setTimeout(() => {
+      clearInterval(it);
+      const folders = parseFirefoxHierarchy(raw);
+      createWall(folders);
+    }, 900);
+  };
+
+  document.getElementById('search').oninput = e => applyFilter(e.target.value);
+
+  document.getElementById('collapseAll').onclick = () => {
+    document.querySelectorAll('.cards').forEach(c=>c.classList.add('hidden'));
+    document.querySelectorAll('.toggle-btn').forEach(b=>b.textContent='+');
+  };
+
+  document.getElementById('expandAll').onclick = () => {
+    document.querySelectorAll('.cards').forEach(c=>c.classList.remove('hidden'));
+    document.querySelectorAll('.toggle-btn').forEach(b=>b.textContent='−');
+  };
+</script>
+</body>
+</html>
